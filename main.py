@@ -29,17 +29,10 @@ from pdb import set_trace as bp
 #you need to make something to calculate what you're most likely to have multiple rolls in the future. That gives you
 #likely delta for next role and if you do less than that you should roll again and more than that chill.
 
-def convert_ones(dice, ones_target):
-    for i in range(0,len(dice)):
-        if dice[i] == 1:
-            dice[i] = ones_target
-    return nums
-
 def get_counts(dice):
     counts = {}
     for d in dice:
         counts[d] = counts.get(d,0) + 1
-    keys = sorted(counts.keys())
     return counts;
 
 def get_kept_partial_roll(dice, ones_target):
@@ -60,28 +53,11 @@ def simulate_next_roll(ones_target, dice):
     return next_roll_scores
 
 def roll(num_dice):
-    dice = []
-    for i in range(0, num_dice):
-        dice.append(random.randint(1,6))
-    return dice
-
-
+    return  [random.randint(1, 6) for i in range(0, num_dice)]
 
 def summarize_roll(dice, ones_target):
-    highest_number = 0
-    highest_count = 0
     counts = get_counts(dice)
-
-    #factor in wildcards
-    counts[ones_target] = counts.get(ones_target,0) + counts.get(1,0)
-
-    keys = sorted(counts.keys())
-    for k in keys:
-        if counts[k] >= highest_count:
-            highest_count = counts[k]
-            highest_number = k
-    return (highest_count, highest_number)
-
+    return counts.get(ones_target,0) + counts.get(1,0), ones_target
 
 def get_best_summary_for_current_roll(dice):
     max_summary = (1,2)
@@ -167,7 +143,6 @@ def main(num_players):
     print('\n'.join(map('  '.join, zip(*[draw_die(6) for i in range(5)]))))
     print("Welcome to Dice Simulator!\n\n")
     first_input = input("Starting a new game.\nType 'random' for random role \nor enter 5 comma separated dice values\n\n")
-    dice = []
     if first_input == 'random':
         dice = roll(5)
     else:
