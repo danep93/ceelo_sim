@@ -59,7 +59,7 @@ def get_best_ones_target_for_current_roll(dice):
 
 def get_potential_best_ones_targets(dice):
     # gets number with the highest concordance or highest value (at most 2)
-    dice = [x for x in dice if x != 1]
+    dice = [x for x in dice if x != 1] # 1 cannot be a 1s target
     if len(dice) == 0:
         return [2,3,4,5,6]
     counts = get_counts(dice)
@@ -84,21 +84,18 @@ def get_ones_target_for_best_score_in_num_rounds(num_rounds_left, dice):
 
 
 
-#TODO:(daniel.epstein): figure out how
-def get_win_ratio(curr_round, dice, ones_target):
+#TODO:(daniel.epstein): change get_potential_ones_target to use highest if theres a tie on concordance
+def get_win_ratio(curr_round, fp_summaries, ones_target):
     wins = 0
     losses = 0
 
     #cpu competitors
-    first_player_summary = summarize_roll(dice, ones_target)
-    print("dice are {} and fp_summary is {}".format(dice, first_player_summary))
     for i in range(0,NUM_SIMULATIONS):
         cpu_dice = roll(MAX_NUM_DICE)
         cpu_ones_target,cpu_summaries = get_ones_target_for_best_score_in_num_rounds(curr_round-1, cpu_dice)
-        # bp()
-        cpu_summary = cpu_summaries[0]
-        compare_result = compare_summaries(first_player_summary, cpu_summary)
-        print("cpu_dice is {} and cpu_summary is {} and compare_results {}".format(cpu_dice, cpu_summary, compare_result))
+        compare_result = compare_summaries(fp_summaries[i], cpu_summaries[i])
+        # print("round is {} and cpu_dice is {} and cpu_summary is {} and fp_summary is {} and compare_results {}".format(
+        #     curr_round, cpu_dice, cpu_summaries[i], fp_summaries[i], compare_result))
 
         if compare_result > 0:
             wins += 1
@@ -153,18 +150,17 @@ def main():
 
 
     # current roll (1)
-    best_ones_target_r1 = get_best_ones_target_for_current_roll(dice)
-    win_ratio_r1 = get_win_ratio(1, dice, best_ones_target_r1)
+    best_ones_target_r1, summaries_r1 = get_ones_target_for_best_score_in_num_rounds(0, dice)
+    win_ratio_r1 = get_win_ratio(1, summaries_r1, best_ones_target_r1)
 
     # next rolls (2 and 3)
     # get expected player 1 rolls
-    best_ones_target_r2,summaries_r2 = get_ones_target_for_best_score_in_num_rounds(1, dice)
+    best_ones_target_r2, summaries_r2 = get_ones_target_for_best_score_in_num_rounds(1, dice)
+    win_ratio_r2 = get_win_ratio(2, summaries_r2, best_ones_target_r2)
 
-    win_ratio_r2 = get_win_ratio(2, dice, best_ones_target_r2)
 
-
-    best_ones_target_r3,_ = get_ones_target_for_best_score_in_num_rounds(1, dice)
-    win_ratio_r3 = get_win_ratio(3, dice, best_ones_target_r3)
+    best_ones_target_r3, summaries_r3 = get_ones_target_for_best_score_in_num_rounds(1, dice)
+    win_ratio_r3 = get_win_ratio(3, summaries_r3, best_ones_target_r3)
 
     print("Round 1: Best score is with 1s target {} giving you win ratio is {}".format(best_ones_target_r1, win_ratio_r1))
     print("Predictions for Round 2: Best score would be with 1s target {} giving you a win ratio of {}".format(best_ones_target_r2, win_ratio_r2))
