@@ -26,15 +26,16 @@ The answer is no, as you can see, even if you get the worst roll in the game you
 Here is the code
 <img width="903" alt="Pasted Graphic 6" src="https://user-images.githubusercontent.com/8129369/204041816-62b9ae73-3c4a-4e7e-b4c1-13c98163b5cb.png">
 
-And here are the results
+And here are the results. I ran it a few times to prove the results are stable and don't change much
 <img width="1103" alt="Pasted Graphic 4" src="https://user-images.githubusercontent.com/8129369/204041848-0107f2ef-b1d3-411c-b0cd-ac22892ec979.png">
 
-###### NOTE: If on average you will get something between (2,6) and (3,6), whose scores are 10 and 15 respectively, your average score might be ~12, which is (3,3) even though your 1s target is 6 not 3.
 
 ### 2) What is the average score per round
 In 3 rounds 17.5 A little better than (4,4,3)
 In 2 rounds 13.878 . . . a little better than (3,4,2)
 In 1 round 8.3265 . . . a little better than (2,4,1)
+
+###### NOTE: If on average you will get something between (2,6) and (3,6), whose scores are 10 and 15 respectively, your average score might be ~12, which is (3,3) even though your 1s target is 6 not 3.
 
 Here is the code for a 1s target of 6 over the next 3 rounds
 <img width="889" alt="Pasted Graphic 3" src="https://user-images.githubusercontent.com/8129369/204049079-cb723455-fa91-4e21-adb8-6b36d670a18d.png">
@@ -43,12 +44,12 @@ And here are the results
 <img width="903" alt="Starting with (J, in 3 pund with ones target 6 the average best score is 17 5135" src="https://user-images.githubusercontent.com/8129369/204049091-c584ea5d-1b66-4955-a697-139bb7c5b958.png">
 
 
-###### NOTE: The law of large number states with big enough numbers the results trend towards the odds. A coin toss is 50-50, but with 3 tosses you might get 3 heads. The odds of getting 1k heads and 0 tails is essentially 0. To prove the results are consistent I ran the code multiple times to show the odds/scores barely change
+###### NOTE: The law of large number states with big enough numbers the results trend towards the odds.
 
-
-#### Example screenshot of how it works
-<img width="960" alt="felcome to Dice Simulator!" src="https://user-images.githubusercontent.com/8129369/204049153-5623ba5b-77e8-4239-8af2-a348792f927d.png">
-
+### 3) What's better, keeping (3,2) or (2,6)?
+The answer depends on which round you want to roll to (which is why going first is an advantage, you get that choice). Here
+you can see your best win:loss ratio results from choosing the 6s and rolling through the 2nd round
+![img_1.png](images/twos_vs_sixes.png)
 ##### And now for a movie
 https://user-images.githubusercontent.com/8129369/204049244-6e9928a4-3779-4e4a-897f-ab88df27fff1.mov
 

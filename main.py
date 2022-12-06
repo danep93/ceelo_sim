@@ -4,50 +4,60 @@ from constants import MAX_ROLLS, MAX_NUM_DICE, NUM_SIMULATIONS, SCORES, draw_die
 import random
 from pdb import set_trace as bp
 
+
 def get_counts(dice):
     counts = {}
     for d in dice:
         counts[d] = counts.get(d,0) + 1
     return counts;
 
+
 def get_kept_partial_roll(dice, ones_target):
     counts = get_counts(dice)
     return [ones_target] * (counts.get(ones_target,0) + counts.get(1,0))
 
+
 def roll(num_dice):
-    return  [random.randint(1, 6) for i in range(0, num_dice)]
+    return [random.randint(1, 6) for i in range(0, num_dice)]
+
 
 def summarize_roll(dice, ones_target):
     counts = get_counts(dice)
     return counts.get(ones_target,0) + counts.get(1,0), ones_target
 
+
 def mean_score(summaries):
     scores = [SCORES.get(x,0) for x in summaries]
     return mean(scores)
 
+
 def compare_summaries(first,second):
     return 1 if SCORES[first] > SCORES[second] else -1 if SCORES[first] < SCORES[second] else 0
+
 
 def summary_to_partial_roll(summary):
     return [summary[1]] * summary[0]
 
-def simulate_next_rolls(ones_target, dice, og_num_rolls_left = 2):
-    #NOTE: runs num_simulations times
+
+def _simulate_remaining_rolls(ones_target, dice, og_current_roll, end_roll=MAX_ROLLS):
+    # NOTE: runs num_simulations times
     next_roll_summaries = []
+
     for i in range(0, NUM_SIMULATIONS):
-        num_rolls_left = og_num_rolls_left
+        current_roll = og_current_roll
         turn = []
 
         partial_roll = get_kept_partial_roll(dice, ones_target)
 
-        while num_rolls_left > 0:
+        while current_roll < end_roll:
             new_partial_roll = roll(MAX_NUM_DICE - len(partial_roll))
             partial_roll += get_kept_partial_roll(new_partial_roll, ones_target)
             summary = summarize_roll(partial_roll, ones_target)
             turn.append(summary)
-            num_rolls_left -= 1
+            current_roll += 1
         next_roll_summaries.append(turn)
     return next_roll_summaries
+
 
 def get_best_ones_target_for_current_roll(dice):
     scores = {}
@@ -55,124 +65,139 @@ def get_best_ones_target_for_current_roll(dice):
         if ones_target == 1:
             continue
         scores[ones_target] = SCORES[summarize_roll(dice, ones_target)]
-    return max(scores, key=scores.get)
+    max_key = 4
+    try:
+        max_key = max(scores, key=scores.get)
+    except:
+        # bp()
+        print("exception in get best ones target, dice are ".format(dice))
+    finally:
+        return max_key
 
-def get_potential_best_ones_targets(dice):
+
+def get_probable_best_ones_targets(dice):
     # gets number with the highest concordance or highest value (at most 2)
-    dice = [x for x in dice if x != 1] # 1 cannot be a 1s target
+    dice = [x for x in dice if x != 1]  # 1 cannot be a 1s target
     if len(dice) == 0:
-        return [2,3,4,5,6]
+        return [2, 3, 4, 5, 6]
     counts = get_counts(dice)
-    values = [max(dice), max(counts, key=counts.get)]
-    return list(set(values))
-
-def get_ones_target_for_best_score_in_num_rounds(num_rounds_left, dice):
-    # NOTE: runs num simulations through simulate_next_rolls
-    summaries = {}
-    scores = {}
-    if num_rounds_left == 0:
-        ones_target = get_best_ones_target_for_current_roll(dice)
-        return ones_target, [summarize_roll(dice, ones_target)] * NUM_SIMULATIONS
-    potential_ones_targets = get_potential_best_ones_targets(dice)
-    for ones_target in potential_ones_targets:
-        simulated_rolls = simulate_next_rolls(ones_target, dice, num_rounds_left)
-        round_simulated_rolls = [x[num_rounds_left-1] for x in simulated_rolls] #-1 because 0 offset arrays
-        summaries[ones_target] = round_simulated_rolls
-        scores[ones_target] = mean_score(round_simulated_rolls)
-    best_ones_target = max(scores, key=scores.get)
-    return best_ones_target, summaries[best_ones_target]
+    max_count = max(counts.values())
+    max_val = [key for key, value in counts.items() if value == max_count]
+    return list(set([max(dice), max(max_val)]))
 
 
+def simulate_remaining_rolls_for_probable_ones_targets(dice, current_roll, end_roll):
+    probable_best_ones_targets = get_probable_best_ones_targets(dice)
 
-#TODO:(daniel.epstein): change get_potential_ones_target to use highest if theres a tie on concordance
-def get_win_ratio(curr_round, fp_summaries, ones_target):
-    wins = 0
-    losses = 0
+    ones_target_simulated_rolls = {}
+    for ones_target in probable_best_ones_targets:
+        ones_target_simulated_rolls[ones_target] = _simulate_remaining_rolls(ones_target, dice, current_roll, end_roll)
+    return ones_target_simulated_rolls
 
-    #cpu competitors
-    for i in range(0,NUM_SIMULATIONS):
+def get_round_simulated_summaries(ones_targets_to_simulated_rolls, ones_target, roll):
+    round_simulated_rolls = {}
+    # bp()
+    for k,v in ones_targets_to_simulated_rolls.items():
+        x_round_rolls = [x[roll-1] for x in v]
+        round_simulated_rolls[k] = x_round_rolls
+    return round_simulated_rolls[ones_target]
+
+
+def get_best_ones_target_for_simulated_remaining_rolls(ones_targets_to_simulated_rolls, in_num_rolls):
+    round_simulated_rolls = {}
+    for k,v in ones_targets_to_simulated_rolls.items():
+        x_round_rolls = [x[in_num_rolls-1] for x in v]
+        round_simulated_rolls[k] = x_round_rolls
+    round_simulated_scores = {k: mean_score(v) for k,v in round_simulated_rolls.items()}
+    # print("scores are {}".format(round_simulated_scores))
+    return max(round_simulated_scores, key=round_simulated_scores.get)
+
+
+def print_win_ratios(fp_dice, current_roll):
+    win_lose_ratios = {}
+    for i in range(current_roll,MAX_ROLLS+1):
+        win_lose_ratios[i] = [0, 0]  # wins and losses
+
+
+    #fp current and future rolls
+    fp_ones_target_current_round = get_best_ones_target_for_current_roll(dice)
+    fp_ones_targets_to_rolls = simulate_remaining_rolls_for_probable_ones_targets(fp_dice, current_roll, MAX_ROLLS)
+    fp_current_roll_summary = summarize_roll(fp_dice, fp_ones_target_current_round)
+
+
+    #make cpu competitors and compare to current and future first player rolls
+    for i in range(0, NUM_SIMULATIONS):
         cpu_dice = roll(MAX_NUM_DICE)
-        cpu_ones_target,cpu_summaries = get_ones_target_for_best_score_in_num_rounds(curr_round-1, cpu_dice)
-        compare_result = compare_summaries(fp_summaries[i], cpu_summaries[i])
-        # print("round is {} and cpu_dice is {} and cpu_summary is {} and fp_summary is {} and compare_results {}".format(
-        #     curr_round, cpu_dice, cpu_summaries[i], fp_summaries[i], compare_result))
+        cpu_ones_targets_to_rolls = simulate_remaining_rolls_for_probable_ones_targets(cpu_dice, 1, MAX_ROLLS)
 
-        if compare_result > 0:
-            wins += 1
-        elif compare_result < 0:
-            losses += 1
-        else: # we don't count ties
-            continue
-    return str(wins) + ":" + str(losses)
+        #win_lose_stats for current round
+        cpu_ones_target_first_roll = get_best_ones_target_for_current_roll(cpu_dice)
 
+        first_result = compare_summaries(fp_current_roll_summary, summarize_roll(cpu_dice, cpu_ones_target_first_roll))
+        wl_ratio = win_lose_ratios[current_roll]
+        if first_result > 0:
+            wl_ratio[0] += 1
+        elif first_result < 0:
+            wl_ratio[1] += 1
+        win_lose_ratios[current_roll] = wl_ratio
 
-#TODO:(daniel.epstein) compute if mode is round up or down from mean
-#TODO:(daniel.epstein) don't just return a map, print a nicely formatted report (change from get_stats to print_stats)
-#TODO:(daniel.epstein) highlight that 5 points is 1 more of something
-#TODO:(daniel.epstein) get_stats computes win_ratio from win_percentage. 90% means 9 wins to 1 loss
-def get_stats(simulated_next_rolls, current_count_and_number):
-    stats = {}
-    current_score = SCORES[current_count_and_number]
-
-    stats['current_roll'] = (current_score, current_count_and_number)
-    next_roll_summaries = [x[0] for x in simulated_next_rolls]
-    next_roll_scores = [SCORES[x] for x in next_roll_summaries]
-    next_roll_deltas = [x - SCORES[current_count_and_number] for x in next_roll_scores if current_count_and_number[0] != MAX_NUM_DICE]
-
-    stats['next_roll'] = (mean(next_roll_scores), mode(next_roll_summaries))
-    stats['next_roll_delta'] = mean(next_roll_deltas)
-
-    if len(simulated_next_rolls[0]) > 1:
-        next_next_roll_summaries = [x[1] for x in simulated_next_rolls]
-        next_next_roll_scores = [SCORES[x] for x in next_next_roll_summaries]
-        next_next_roll_deltas = [SCORES[x[1]] - SCORES[x[0]] for x in simulated_next_rolls if x[0][0] != MAX_NUM_DICE]
-
-        stats['next_next_roll'] = (mean(next_next_roll_scores), mode(next_next_roll_summaries))
-        stats['next_next_roll_delta'] = mean(next_next_roll_deltas)
-
-    return stats
+        #todo:(daniel.epstein) pick up here
+        #compare
+        #modify win_lose_ratio for current round
 
 
+        #win lose stats for remaining rounds (if applicable)
+        j = current_roll + 1
+        in_num_rolls = 1
+        while j <= MAX_ROLLS:
+
+            cpu_ones_target_future_roll = get_best_ones_target_for_simulated_remaining_rolls(cpu_ones_targets_to_rolls, in_num_rolls)
+            # bp()
+            cpu_round_summaries = get_round_simulated_summaries(cpu_ones_targets_to_rolls, cpu_ones_target_future_roll, j-1)
+
+            fp_ones_target_future_roll = get_best_ones_target_for_simulated_remaining_rolls(fp_ones_targets_to_rolls, in_num_rolls)
+            fp_round_summaries = get_round_simulated_summaries(fp_ones_targets_to_rolls, fp_ones_target_future_roll, j-1)
+
+            for i in range(0, len(fp_round_summaries)):
+                wl_ratio = win_lose_ratios[j]
+                round_result = compare_summaries(fp_round_summaries[i], cpu_round_summaries[i])
+                if round_result > 0:
+                    wl_ratio[0] += 1
+                elif round_result < 0:
+                    wl_ratio[1] += 1
+                win_lose_ratios[j] = wl_ratio
+            j += 1
+            in_num_rolls += 1
+
+    for k, v in win_lose_ratios.items():
+        #todo:(daniel.epstein) print the avg summary/score at each round
+        percentile = round(v[0] / (v[0] + v[1]), 2)
+        ratio = round(v[0] / v[1], 2)
+        print("Your roll {} is in the {} percentile with a win-lose ratio of {}".format(k, percentile, ratio))
 
 
-# only pass around summaries
+#todo:(daniel.epstein) factor in ones where you hit 5 of something before 3rd round
+
+#todo:(daniel.epstein) get win ratio of FP if you used a less-than-best ones target
+
+dice = [1,4,4,5,6]
+num_rolls_left = 2
+simulated_rolls = simulate_remaining_rolls_for_probable_ones_targets(dice, current_roll=1, end_roll=3)
+print("dice are {}".format(dice))
+print("best ones target in {} rolls is {}".format(num_rolls_left,
+    get_best_ones_target_for_simulated_remaining_rolls(simulated_rolls, in_num_rolls=num_rolls_left)))
+print_win_ratios(dice, 1)
 
 
-#TODO:(daniel.epstein) suggest if you should stay or roll again based off when your chances of winning increase or decrease
-def main():
-    print('\n'.join(map('  '.join, zip(*[draw_die(6) for i in range(5)]))))
-    print("Welcome to Dice Simulator!\n\n")
-    first_input = input("Starting a new game.\nType 'random' for random role \nor enter 5 comma separated dice values\n\n")
-    if first_input == 'random':
-        dice = roll(5)
-    else:
-        dice = [int(x) for x in first_input.strip().split(",")]
+# proves when you should use more of lesser number vs less of higher number for 1, 2, and 3 rounds
+# dice = [1,2,2,5,6]
+# simulated_rolls = simulate_remaining_rolls_for_probable_ones_targets(dice, current_roll=1, end_roll=3)
+# print(get_best_ones_target_for_simulated_remaining_rolls(simulated_rolls, 2))
 
 
-    # current roll (1)
-    best_ones_target_r1, summaries_r1 = get_ones_target_for_best_score_in_num_rounds(0, dice)
-    win_ratio_r1 = get_win_ratio(1, summaries_r1, best_ones_target_r1)
+# prove assumption that 3 4s wins about half the time and that goes down in later rounds
+# talk about percentiles and win ratios and what that means relative to how many people you play with
 
-    # next rolls (2 and 3)
-    # get expected player 1 rolls
-    best_ones_target_r2, summaries_r2 = get_ones_target_for_best_score_in_num_rounds(1, dice)
-    win_ratio_r2 = get_win_ratio(2, summaries_r2, best_ones_target_r2)
-
-
-    best_ones_target_r3, summaries_r3 = get_ones_target_for_best_score_in_num_rounds(1, dice)
-    win_ratio_r3 = get_win_ratio(3, summaries_r3, best_ones_target_r3)
-
-    print("Round 1: Best score is with 1s target {} giving you win ratio is {}".format(best_ones_target_r1, win_ratio_r1))
-    print("Predictions for Round 2: Best score would be with 1s target {} giving you a win ratio of {}".format(best_ones_target_r2, win_ratio_r2))
-    print("Predictions for Round 3: Best score would be with 1s target {} giving you a win ratio of {}".format(best_ones_target_r3, win_ratio_r3))
-    #
-    # while True:
-    #
-    #     ones_value = int(input("Dice are {} . . . Enter the 1s value you want to test out \n\n".format(dice)).strip())
-    #     current_count_and_number = summarize_roll(dice, ones_value)
-    #
-    #     simulated_next_rolls = simulate_next_rolls(ones_value, dice, 2)
-    #     turn_stats = get_stats(simulated_next_rolls, current_count_and_number)
-    #     print("Results are {} \n\n".format(turn_stats))
-
-main()
+# two questions to answer. Why is it better to go first? When should I choose less of something vs more of something else
+# prove why it is an advantage to go first. You can quit when you have the best projected win percentage.
+# show how that is 1st round with 4 sixes. But if you need to beat (5,5,3) then you must keep rolling, decreasing your relative advantage
