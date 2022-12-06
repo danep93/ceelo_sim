@@ -114,8 +114,14 @@ def get_best_ones_target_for_simulated_remaining_rolls(ones_targets_to_simulated
 #todo:(daniel.epstein) get win ratio of 2nd best ones target for FP if there is one
 def print_win_ratios(fp_dice, curr_roll):
     win_lose_ratios = {}
+    win_lose_ones_targets = {}
+    other_option_win_lose_ratios = {}  # to see what you would get if you went with the other ones target
+    other_option_ones_targets = {}
     for i in range(curr_roll,MAX_ROLLS+1):
         win_lose_ratios[i] = [0, 0]  # wins and losses
+        win_lose_ones_targets[i] = 0
+        other_option_win_lose_ratios[i] = [0, 0]
+        other_option_ones_targets[i] = 0
 
 
     #fp current and future rolls
@@ -132,10 +138,14 @@ def print_win_ratios(fp_dice, curr_roll):
 
         # -1 because we just did our first CPU roll above
         in_num_rolls = curr_roll - 1
-        cpu_ones_target = get_best_ones_target_for_simulated_remaining_rolls(cpu_ones_targets_to_rolls, in_num_rolls)
 
         # bp()
-        cpu_round_summaries = get_round_simulated_summaries(cpu_ones_targets_to_rolls, cpu_ones_target, in_num_rolls)
+
+        cpu_ones_target = get_best_ones_target_for_current_roll(cpu_dice)
+        cpu_round_summaries = [summarize_roll(cpu_dice, cpu_ones_target)]
+        if in_num_rolls != 0:
+            cpu_ones_target = get_best_ones_target_for_simulated_remaining_rolls(cpu_ones_targets_to_rolls, in_num_rolls)
+            cpu_round_summaries = get_round_simulated_summaries(cpu_ones_targets_to_rolls, cpu_ones_target, in_num_rolls)
         for i in range(0, len(cpu_round_summaries)):
             first_result = compare_summaries(fp_current_roll_summary, cpu_round_summaries[i])
             wl_ratio = win_lose_ratios[curr_roll]
@@ -173,7 +183,7 @@ def print_win_ratios(fp_dice, curr_roll):
         #todo:(daniel.epstein) print the avg summary/score at each round
         if v[1] == 0:
             percentile = 1.00
-            ratio = NUM_SIMULATIONS
+            ratio = NUM_SIMULATIONS**2
         else:
             percentile = round(v[0] / (v[0] + v[1]), 2) * 100
             ratio = round(v[0] / v[1], 2)
@@ -185,16 +195,19 @@ def print_win_ratios(fp_dice, curr_roll):
 
 
 # 1) prove why its better to go first
-dice = [1,2,2,2,2]
+# (5,5,1) is 88%
+dice = [6,6,6,6,5]
 curr_roll = 1
 final_roll = 3
-simulated_rolls = simulate_remaining_rolls_for_probable_ones_targets(dice, curr_roll)
-
 print("dice are {} in round {}".format(dice, curr_roll))
-print("best ones target in round {} is {}".format(final_roll,
-    get_best_ones_target_for_simulated_remaining_rolls(simulated_rolls, in_num_rolls=final_roll - curr_roll)))
-# print(simulated_rolls)
 print_win_ratios(dice, curr_roll)
+
+
+# simulated_rolls = simulate_remaining_rolls_for_probable_ones_targets(dice, curr_roll)
+#
+# print("best ones target in round {} is {}".format(final_roll,
+#     get_best_ones_target_for_simulated_remaining_rolls(simulated_rolls, in_num_rolls=final_roll - curr_roll)))
+# print(simulated_rolls)
 
 
 # proves when you should use more of lesser number vs less of higher number for 1, 2, and 3 rounds
@@ -211,8 +224,6 @@ print_win_ratios(dice, curr_roll)
 # show how that is 1st round with 4 sixes. But if you need to beat (5,5,3) then you must keep rolling, decreasing your relative advantage
 
 # todo list
-#todo:(daniel.epstein): fix next/current roll debacle so we can get win ratio of a roll in a certain round.
-#todo:(daniel.epstein) i suspect when you enter a roll in X round you're competing against cpu at 1st round. FIX THIS
 
 #todo:(daniel.epstein) print avg score (and what it translates to) in print_ratios. Also do this for 2nd best scores
 #todo:(daniel.epstein) factor in ones where you hit 5 of something before 3rd round
@@ -220,3 +231,5 @@ print_win_ratios(dice, curr_roll)
 
 # todo list DONE
 #todo:(daniel.epstein) show that 5,5,3 has a lower win-lose ratio and is in a lower percentile than 4,6,1
+#todo:(daniel.epstein): fix next/current roll debacle so we can get win ratio of a roll in a certain round.
+#todo:(daniel.epstein) i suspect when you enter a roll in X round you're competing against cpu at 1st round. FIX THIS
