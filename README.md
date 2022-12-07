@@ -25,7 +25,7 @@ Let’s use the example of someone going first with (5,5,3) vs your  (4,6,1)
 <img width="1480" alt="Pasted Graphic 16" src="https://user-images.githubusercontent.com/8129369/206085137-d31c9820-5a64-47fc-9b89-a6061211fab8.png">
 <img width="1493" alt="Pasted Graphic 17" src="https://user-images.githubusercontent.com/8129369/206085160-55c52f0f-d048-46f5-9edc-677342d48f5f.png">
 
-(5,5,3) beats (4,6,1) even though (4,6,1) is a more “anomalously good” role. That’s because it is a better roll when you normalize by round. So if I went first and rolled (4,6,1) I could stop there and maximize my WLR (since it only goes down from there). However, that won’t win the pot and I’m forced to keep rolling.
+(5,5,3) beats (4,6,1) even though (4,6,1) is a more “anomalously good” role. That’s because it is a better roll when you [normalize](https://en.wikipedia.org/wiki/Normalization_(statistics)) by round. So if I went first and rolled (4,6,1) I could stop there and maximize my WLR (since it only goes down from there). However, that won’t win the pot and I’m forced to keep rolling. **__So in the example of a game with up to 47 people, if you go first and get (4,6,1) you are expected to win. However, if you go second and the first player gets (5,5,3), then he will most likely beat you, even in 3 rolls (85th vs 89th percentile).__**
 
 #### 2. When do you choose lower-concordance-higher-value over higher-concordance-lower-value?
 
