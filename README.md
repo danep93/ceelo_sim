@@ -1,55 +1,59 @@
-# ceelo_sim the dice simulator
-never lose (long term) at dice again
-
-### Glossary
-_ones-target_ --> if you get a 1 what number do you want to turn it in to  \
-_round / turn_ --> a collection of rolls (up to 3)  \
-_summary_ --> (x,y,z) eg. rolling three fours in one round is (3,4,1)
+# ceelo_sim the dice decision maker helper
+### never lose (long term) at dice again
+![image](https://user-images.githubusercontent.com/8129369/206088689-ea681d1e-d433-45eb-8764-8f01faadd21c.png)
 
 
-__First off, some context.__ Since there's a clear hierarchy of rolls  \
-((3,3) > (3,2) > (2,6)) you can assign scores to summaries. If you want to see the mapping of summaries to scores look at the SCORES variable in constants.py
+   I was hooked on ceelo since I saw my first dice sack and ledger. Once I understood the rules and realized it was a solved game I needed to solve it. Is it better to keep your lower numbers over your higher numbers if you have more of the same lower number? How does the number of rounds factor into your decision? How does the number of players in your game influence your choice to roll again or stay with the dice you have?
 
-At first I just wanted to answer a few questions so I made a probability simulator.
-How did I get my answers? Instead of figuring out the math, I ran simulations. Every time there was a decision to be made I ran thousands of simulations and picked the option that gave me the best answer.
+## Object of the game
+Everyone throws a dollar in the pot and winner takes all. When you roll your five dice you want to maximize concordance and value — in that order — over a max of three rolls. The person who goes first decides how many rolls that round will be — something we’ll go over in depth later — . . . You can do partial re-rolls for the dice that you don’t like, similar to Five Card Draw poker.   
 
-You want to keep rolling until you get the best win:loss ratio
+## Glossary
+  
+  **_Concordance_**: It means “aggreeance”, if I roll [2,2,2,4,1] I have a concordance of three (twos)
+  
+  **_Ones target_**: What are you converting your 1s to / which dice are you keeping
+  
+  **_Summary_**: (4,5,1) means I got four fives in one roll
+  
+  **_Win-lose ratio_**:  (WLR) How many wins do you see per loss. For optimal stack growth this is the metric you want to maximize. If you have a WLR of 10.5 you’re expected to win that game with 10 other people. However, if you’re playing with 11 other people or more then the odds are that someone else will take home the pot.
+  
+## Questions answered on strategy
 
-### An intuitive finding
-Going first is an advantage because you can choose to maximize your POTENTIAL score with another round. If you rolled [1,2,3,4,6] then (2,2,1) is a horrible roll but it's your best current score. Your expected score in round 2 (3,6,2) will be in a higher percentile (normalized per number of rounds) than your current roll is in round 1 with ones-target 
+##### 1. Why is it an advantage to go first
+Let’s use the example of someone going first with (5,5,3) vs your  (4,6,1) 
+<img width="1480" alt="Pasted Graphic 16" src="https://user-images.githubusercontent.com/8129369/206085137-d31c9820-5a64-47fc-9b89-a6061211fab8.png">
+<img width="1493" alt="Pasted Graphic 17" src="https://user-images.githubusercontent.com/8129369/206085160-55c52f0f-d048-46f5-9edc-677342d48f5f.png">
 
-### Questions I wanted to answer
+(5,5,3) beats (4,6,1) even though (4,6,1) is a more “anomalously good” role. That’s because it is a better roll when you normalize by round. So if I went first and rolled (4,6,1) I could stop there and maximize my WLR (since it only goes down from there). However, that won’t win the pot and I’m forced to keep rolling.
 
-### 1) Do you ever get such a bad roll you want to reroll all 5 dice?
-The answer is no, as you can see, even if you get the worst roll in the game your average score goes down if you reroll all 5 vs keeping your best dice.
+#### 2. When do you choose lower-concordance-higher-value over higher-concordance-lower-value?
 
-Here is the code
-<img width="903" alt="Pasted Graphic 6" src="https://user-images.githubusercontent.com/8129369/204041816-62b9ae73-3c4a-4e7e-b4c1-13c98163b5cb.png">
+If you have [1,2,2,5,6] do you keep the 2s or 6s? How does that change per round? 
 
-And here are the results. I ran it a few times to prove the results are stable and don't change much
-<img width="1103" alt="Pasted Graphic 4" src="https://user-images.githubusercontent.com/8129369/204041848-0107f2ef-b1d3-411c-b0cd-ac22892ec979.png">
+https://user-images.githubusercontent.com/8129369/206085986-e2e6fb44-90f4-415e-97b3-6a1d59a60662.mov
+###### As you can see, if you roll those dice and go first you maximize your WLR by keeping the 6s and rolling through round 3
 
+Here are screenshots of the same analysis with 3s and 4s, which as you can imagine, are much closer calls to make.
+<img width="1330" alt="image" src="https://user-images.githubusercontent.com/8129369/206086106-01e000fa-bc7c-4dde-9c83-3f1a4d0dd78e.png">
+<img width="1342" alt="image" src="https://user-images.githubusercontent.com/8129369/206086165-4112c07e-78ba-463c-9c17-49bb204f343a.png">
 
-### 2) What is the average score per round
-In 3 rounds 17.5 A little better than (4,4,3)
-In 2 rounds 13.878 . . . a little better than (3,4,2)
-In 1 round 8.3265 . . . a little better than (2,4,1)
-
-###### NOTE: If on average you will get something between (2,6) and (3,6), whose scores are 10 and 15 respectively, your average score might be ~12, which is (3,3) even though your 1s target is 6 not 3.
-
-Here is the code for a 1s target of 6 over the next 3 rounds
-<img width="889" alt="Pasted Graphic 3" src="https://user-images.githubusercontent.com/8129369/204049079-cb723455-fa91-4e21-adb8-6b36d670a18d.png">
-
-And here are the results
-<img width="903" alt="Starting with (J, in 3 pund with ones target 6 the average best score is 17 5135" src="https://user-images.githubusercontent.com/8129369/204049091-c584ea5d-1b66-4955-a697-139bb7c5b958.png">
+So the answer is clear, depending on what my “lower value higher concordance” number is and what my stopping round is I may want to keep the higher numbers. If I have [3,3,1,5,6] and I want to maximize my 2nd round score I keep the 3s but if I want to maximize my 3rd round score I keep the 6s. 
 
 
-###### NOTE: The law of large number states with big enough numbers the results trend towards the odds.
+## Frequently asked
 
-### 3) What's better, keeping (3,2) or (2,6)?
-The answer depends on which round you want to roll to (which is why going first is an advantage, you get that choice). Here
-you can see your best win:loss ratio results from choosing the 6s and rolling through the 2nd round
-![img_1.png](images/twos_vs_sixes.png)
-##### And now for a movie
-https://user-images.githubusercontent.com/8129369/204049244-6e9928a4-3779-4e4a-897f-ab88df27fff1.mov
+**__Why do I see average score numbers changing?__**
 
+I’m running over 10k simulations every time I run the program, but even then the numbers won’t be EXACTLY the same. So is the nature of random number generators, even despite the law of large numbers.
+
+
+**__What are the scores__**
+
+Since roll summaries are ordinal (5,6) > (5,5) > (4,6) . . . we can assign scores to them. This helps us compare summaries and get mean scores across multiple simulations, even though those scores might lie in the “step” between x and x+1.
+
+**__Are percentiles and win-lose-ratios normalized by round?__**
+
+Yes they are, let's prove this with an example.
+Notice how if I have the same dice [3,3,3,2,6] but different rounds, the score in round 2 equals the score in round 3, even though their percentiles and win ratios are different.
+<img width="1345" alt="Screen Shot 2022-12-06 at 11 21 32 PM" src="https://user-images.githubusercontent.com/8129369/206088325-d68d4c1f-e376-42bb-87cb-12e6ad131aa4.png">
