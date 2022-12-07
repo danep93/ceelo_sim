@@ -1,4 +1,4 @@
-# ceelo_sim the dice decision maker helper
+# Ceelo_Sim the dice decision maker
 ### never lose (long term) at dice again
 ![image](https://user-images.githubusercontent.com/8129369/206088689-ea681d1e-d433-45eb-8764-8f01faadd21c.png)
 
