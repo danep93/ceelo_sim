@@ -20,19 +20,20 @@ Everyone throws a dollar in the pot and winner takes all. When you roll your fiv
   
 ## Questions answered on strategy
 
-##### 1. Why is it an advantage to go first
+### 1. Why is it an advantage to go first
 Let’s use the example of someone going first with (5,5,3) vs your  (4,6,1) 
 <img width="1480" alt="Pasted Graphic 16" src="https://user-images.githubusercontent.com/8129369/206085137-d31c9820-5a64-47fc-9b89-a6061211fab8.png">
 <img width="1493" alt="Pasted Graphic 17" src="https://user-images.githubusercontent.com/8129369/206085160-55c52f0f-d048-46f5-9edc-677342d48f5f.png">
 
-(5,5,3) beats (4,6,1) even though (4,6,1) is a more “anomalously good” role. That’s because it is a better roll when you [normalize](https://en.wikipedia.org/wiki/Normalization_(statistics)) by round. So if I went first and rolled (4,6,1) I could stop there and maximize my WLR (since it only goes down from there). However, that won’t win the pot and I’m forced to keep rolling. **__So in the example of a game with up to 47 people, if you go first and get (4,6,1) you are expected to win. However, if you go second and the first player gets (5,5,3), then he will most likely beat you, even in 3 rolls (85th vs 89th percentile).__**
+(5,5,3) beats (4,6,1) even though (4,6,1) is a more “anomalously good” role. That’s because it is a better roll when you [normalize](https://en.wikipedia.org/wiki/Normalization_(statistics)) by round. So if I went first and rolled (4,6,1) I could stop there and maximize my WLR (since it only goes down from there). However, that won’t win the pot and I’m forced to keep rolling. **So in the example of a game with up to 47 people, if you go first and get (4,6,1) you are expected to win. However, if you go second and the first player gets (5,5,3), then he will most likely beat you, even in 3 rolls (85th vs 89th percentile). Even if you do get lucky and beat him you'll very likely lose to one of the other 46 people, as your WLR is now ~6**
 
-#### 2. When do you choose lower-concordance-higher-value over higher-concordance-lower-value?
+
+### 2. When do you choose lower-concordance-higher-value over higher-concordance-lower-value?
 
 If you have [1,2,2,5,6] do you keep the 2s or 6s? How does that change per round? 
 
 https://user-images.githubusercontent.com/8129369/206085986-e2e6fb44-90f4-415e-97b3-6a1d59a60662.mov
-###### As you can see, if you roll those dice and go first you maximize your WLR by keeping the 6s and rolling through round 3
+##### As you can see, if you roll those dice and go first you maximize your WLR by keeping the 6s and rolling through round 3
 
 Here are screenshots of the same analysis with 3s and 4s, which as you can imagine, are much closer calls to make.
 <img width="1330" alt="image" src="https://user-images.githubusercontent.com/8129369/206086106-01e000fa-bc7c-4dde-9c83-3f1a4d0dd78e.png">
