@@ -1,8 +1,9 @@
 MAX_ROLLS = 3
 MAX_NUM_DICE = 5
-NUM_SIMULATIONS = 1000
+NUM_SIMULATIONS = 100
 
 SCORES = {
+    (0,0): 0,
     (1,2): 1,
     (1,3): 2,
     (1,4): 3,
@@ -67,3 +68,8 @@ def draw_die(die):
                 "| O   O |",
                 "| O   O |",
                 "=========",]
+
+
+
+
+

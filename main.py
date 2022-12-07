@@ -26,7 +26,7 @@ def summarize_roll(dice, ones_target):
 
 
 def mean_score(summaries):
-    scores = [SCORES.get(x,0) for x in summaries]
+    scores = [SCORES.get(x,0) for x in summaries if x != (0,0)]
     return mean(scores)
 
 
@@ -49,22 +49,27 @@ def round_score_to_summary(score):
         summary = "rounded up " + summary
     return summary
 
-def _simulate_remaining_rolls(ones_target, dice, og_current_roll):
+def _simulate_all_rolls(ones_target, dice, starting_roll):
     # NOTE: runs num_simulations times
     next_roll_summaries = []
 
     for i in range(0, NUM_SIMULATIONS):
-        current_roll = og_current_roll
+        curr = 1
         turn = []
 
         partial_roll = get_kept_partial_roll(dice, ones_target)
 
-        while current_roll < MAX_ROLLS:
-            new_partial_roll = roll(MAX_NUM_DICE - len(partial_roll))
-            partial_roll += get_kept_partial_roll(new_partial_roll, ones_target)
-            summary = summarize_roll(partial_roll, ones_target)
+        while curr <= MAX_ROLLS:
+            if curr < starting_roll:
+                summary = (0,0)
+            elif curr == starting_roll:
+                summary = summarize_roll(dice, ones_target)
+            else:
+                new_partial_roll = roll(MAX_NUM_DICE - len(partial_roll))
+                partial_roll += get_kept_partial_roll(new_partial_roll, ones_target)
+                summary = summarize_roll(partial_roll, ones_target)
             turn.append(summary)
-            current_roll += 1
+            curr += 1
         next_roll_summaries.append(turn)
     return next_roll_summaries
 
@@ -100,7 +105,7 @@ def simulate_remaining_rolls_for_probable_ones_targets(dice, curr_roll):
     probable_best_ones_targets = get_probable_best_ones_targets(dice)
     ones_target_simulated_rolls = {}
     for ones_target in probable_best_ones_targets:
-        ones_target_simulated_rolls[ones_target] = _simulate_remaining_rolls(ones_target, dice, curr_roll)
+        ones_target_simulated_rolls[ones_target] = _simulate_all_rolls(ones_target, dice, curr_roll)
     return ones_target_simulated_rolls
 
 def get_round_simulated_summaries(ones_targets_to_simulated_rolls, ones_target, roll):
@@ -122,120 +127,85 @@ def get_best_ones_target_for_simulated_remaining_rolls(ones_targets_to_simulated
     # print("scores are {}".format(round_simulated_scores))
     return max(round_simulated_scores, key=round_simulated_scores.get)
 
-#todo:(daniel.epstein) get win ratio of 2nd best ones target for FP if there is one
+
 def print_win_ratios(fp_dice, curr_roll):
+    og_curr_roll = curr_roll
     win_lose_ratios = {}
     win_lose_ones_targets = {}
     cpu_avg_scores = {}
     fp_avg_scores = {}
-    # other_option_win_lose_ratios = {}  # to see what you would get if you went with the other ones target
-    # other_option_ones_targets = {}
     for i in range(curr_roll,MAX_ROLLS+1):
         win_lose_ratios[i] = [0, 0]  # wins and losses
         win_lose_ones_targets[i] = 0
         cpu_avg_scores[i] = []
         fp_avg_scores[i] = []
-        # other_option_win_lose_ratios[i] = [0, 0]
-        # other_option_ones_targets[i] = 0
 
-
-    #fp current and future rolls
-    fp_ones_target_current_round = get_best_ones_target_for_current_roll(fp_dice)
+    # fp current and future rolls
     fp_ones_targets_to_rolls = simulate_remaining_rolls_for_probable_ones_targets(fp_dice, curr_roll)
-    fp_current_roll_summary = summarize_roll(fp_dice, fp_ones_target_current_round)
 
-
-    #make cpu competitors and compare to current and future first player rolls
+    # make cpu competitors and compare to current and future first player rolls
+    sims = 0
     for i in range(0, NUM_SIMULATIONS):
+        curr_roll = og_curr_roll
         # CPU always starts from round 1, even if first player is comparing a 3rd round roll
         cpu_dice = roll(MAX_NUM_DICE)
         cpu_ones_targets_to_rolls = simulate_remaining_rolls_for_probable_ones_targets(cpu_dice, curr_roll=1)
+        while curr_roll <= MAX_ROLLS:
+            fp_ones_target_future_roll = get_best_ones_target_for_simulated_remaining_rolls(fp_ones_targets_to_rolls,
+                                                                                            curr_roll)
+            fp_round_summaries = get_round_simulated_summaries(fp_ones_targets_to_rolls, fp_ones_target_future_roll,
+                                                               curr_roll)
 
-        # -1 because we just did our first CPU roll above
-        in_num_rolls = curr_roll - 1
-
-        cpu_ones_target = get_best_ones_target_for_current_roll(cpu_dice)
-        cpu_round_summaries = [summarize_roll(cpu_dice, cpu_ones_target)]
-        if in_num_rolls != 0:
-            cpu_ones_target = get_best_ones_target_for_simulated_remaining_rolls(cpu_ones_targets_to_rolls, in_num_rolls)
-            cpu_round_summaries = get_round_simulated_summaries(cpu_ones_targets_to_rolls, cpu_ones_target, in_num_rolls)
-        for i in range(0, len(cpu_round_summaries)):
-            first_result = compare_summaries(fp_current_roll_summary, cpu_round_summaries[i])
-            wl_ratio = win_lose_ratios[curr_roll]
-            if first_result > 0:
-                wl_ratio[0] += 1
-            elif first_result < 0:
-                wl_ratio[1] += 1
-            win_lose_ratios[curr_roll] = wl_ratio
-        win_lose_ones_targets[curr_roll] = fp_ones_target_current_round
-        # bp()
-        cpu_avg_scores[curr_roll] = cpu_avg_scores[curr_roll] + cpu_round_summaries
-        fp_avg_scores[curr_roll] = fp_avg_scores[curr_roll] + [fp_current_roll_summary]
-
-
-    # win lose stats for remaining rounds (if applicable)
-        #TODO:(DANIEL.EPSTEIN) reconcile in_num_rolls and curr_roll and j
-        j = curr_roll + 1
-        in_num_rolls += 1
-        while j <= MAX_ROLLS:
-
-            cpu_ones_target_future_roll = get_best_ones_target_for_simulated_remaining_rolls(cpu_ones_targets_to_rolls, in_num_rolls)
-            cpu_round_summaries = get_round_simulated_summaries(cpu_ones_targets_to_rolls, cpu_ones_target_future_roll, j-1)
-            # bp()
-            fp_ones_target_future_roll = get_best_ones_target_for_simulated_remaining_rolls(fp_ones_targets_to_rolls, in_num_rolls)
-            fp_round_summaries = get_round_simulated_summaries(fp_ones_targets_to_rolls, fp_ones_target_future_roll, j-1) #j-1
-
-            for i in range(0, len(fp_round_summaries)):
-                wl_ratio = win_lose_ratios[j]
-                round_result = compare_summaries(fp_round_summaries[i], cpu_round_summaries[i])
-                if round_result > 0:
-                    wl_ratio[0] += 1
-                elif round_result < 0:
-                    wl_ratio[1] += 1
-                win_lose_ratios[j] = wl_ratio
-            win_lose_ones_targets[j] = fp_ones_target_future_roll
-            # bp()
-            cpu_avg_scores[j] = cpu_avg_scores[j] + cpu_round_summaries
-            fp_avg_scores[j] = fp_avg_scores[j] + fp_round_summaries
-            j += 1
-            in_num_rolls += 1
-
+            cpu_ones_target = get_best_ones_target_for_simulated_remaining_rolls(cpu_ones_targets_to_rolls, curr_roll)
+            cpu_round_summaries = get_round_simulated_summaries(cpu_ones_targets_to_rolls, cpu_ones_target, curr_roll)
+            for j in range(0, len(fp_round_summaries)):
+                result = compare_summaries(fp_round_summaries[j], cpu_round_summaries[j])
+                if result > 0:
+                    win_lose_ratios[curr_roll][0] += 1  # win
+                elif result < 0:
+                    win_lose_ratios[curr_roll][1] += 1  # loss
+                sims += 1
+            win_lose_ones_targets[curr_roll] = fp_ones_target_future_roll
+            cpu_avg_scores[curr_roll] = cpu_avg_scores[curr_roll] + cpu_round_summaries
+            fp_avg_scores[curr_roll] = fp_avg_scores[curr_roll] + fp_round_summaries
+            curr_roll += 1
+    # bp()
     print("Computer competitor (CPU) scores per round -- mostly static --")
-    for k,v in cpu_avg_scores.items():
+    for k, v in cpu_avg_scores.items():
         cpu_avg_score = round(mean_score(cpu_avg_scores[k]), 2)
         cpu_rounded_score = round_score_to_summary(cpu_avg_score)
         print("Round: {} . . . CPU_avg_score: {} or {}".format(k, cpu_avg_score, cpu_rounded_score))
     print("\n")
 
-    print("dice are {} in round {}".format(fp_dice, curr_roll))
+    print("dice are {} in round {}".format(fp_dice, og_curr_roll))
     print("First Player (FP) scores per round -- highly dependent on your initial dice --")
-    for k,v in win_lose_ratios.items():
+    for k, v in win_lose_ratios.items():
         if v[1] == 0:
             percentile = 100
-            ratio = NUM_SIMULATIONS**2
+            ratio = NUM_SIMULATIONS ** 2
         else:
             percentile = round(v[0] / (v[0] + v[1]), 2) * 100
             ratio = round(v[0] / v[1], 2)
 
-        fp_avg_score = round(mean_score(fp_avg_scores[k]),2)
+        fp_avg_score = round(mean_score(fp_avg_scores[k]), 2)
         fp_rounded_score = round_score_to_summary(fp_avg_score)
         ones_target = win_lose_ones_targets[k]
-        print("Round: {} . . . 1s_target: {} . . . FP_avg_score: {} or {} . . . Percentile: {} . . . Win-lose-ratio: {}".format(
-            k, ones_target, format(fp_avg_score, '.2f'), fp_rounded_score, format(percentile, '.2f'), format(ratio, '.2f')))
-
-
-
+        print(
+            "Round: {} . . . 1s_target: {} . . . FP_avg_score: {} or {} . . . Percentile: {} . . . Win-lose-ratio: {}".format(
+                k, ones_target, format(fp_avg_score, '.2f'), fp_rounded_score, format(percentile, '.0f'),
+                format(ratio, '.2f')))
 
 
 # 1) prove why its better to go first
 # (5,5,1) is 88%
 # dice = [6,6,3,4,2]
-dice = [3,3,6,1,4]
+dice = [3,3,6,1,3]
 # print("dice are {} in round {} \n".format(fp_dice, curr_roll))
-curr_roll = 1
+curr_roll = 2
 final_roll = 3
 print_win_ratios(dice, curr_roll)
 
+# print(simulate_remaining_rolls_for_probable_ones_targets(dice, curr_roll))
 
 # simulated_rolls = simulate_remaining_rolls_for_probable_ones_targets(dice, curr_roll)
 #
@@ -258,9 +228,13 @@ print_win_ratios(dice, curr_roll)
 # show how that is 1st round with 4 sixes. But if you need to beat (5,5,3) then you must keep rolling, decreasing your relative advantage
 
 # todo list
+#todo:(daniel.epstein) INCLUDE CURRENT SUMMARY IN LIST OF SUMMARIES!!! Just too complicated otherwise.
 #todo:(daniel.epstein) make spacing work for printing ratios so theyre always consistent
+#todo:(daniel.epstein) let them put in their own 1s target (or compare best to 2nd best so you can see HOW much better). In probable_best_ones_target allow override to pass in your own??
 #todo:(daniel.epstein) factor in ones where you hit 5 of something before 3rd round
 
+
+# the problem is if FP starts with round 2, array is smaller than CPU array. so you're comparing an array with 2 entries per entry with 1 that just has 1
 
 # todo list DONE
 #todo:(daniel.epstein) score should also say round up/down to <summary>
